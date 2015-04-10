@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <EditText
+            android:id="@+id/editText_add_date"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="date"
+            android:hint="在此输入日期"/>
+    <Spinner
+            android:id="@+id/spinner_add_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    <EditText
+            android:id="@+id/editText_add_money"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="在此输入金额"
+            android:inputType="numberDecimal"/>
+    <EditText
+            android:id="@+id/editText_add_detail"
+            android:layout_width="match_parent"
+            android:hint="在此输入备注信息"
+            android:layout_height="wrap_content"/>
+    <Button
+            android:id="@+id/btn_add_confirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="完成"/>
+</LinearLayout>
