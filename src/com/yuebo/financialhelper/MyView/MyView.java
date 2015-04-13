@@ -50,11 +50,14 @@ public class MyView extends View {
 
     TextPaint textPaint;
     Paint paint;
+    Paint circlePaint;
     RectF rectF;
     private void init(Context context) {
         textPaint = new TextPaint();
         textPaint.setTextSize(30);
         paint = new Paint();
+        circlePaint = new Paint();
+        circlePaint.setColor(Color.WHITE);
         rectF = new RectF(0,0,0,0);
         colors = new int[]{
                 Color.rgb(0,205,0)
@@ -100,5 +103,6 @@ public class MyView extends View {
             textPaint.setColor(colors[i-2]);
             canvas.drawText(title[i] + ":" + list[i], x + 420,y + (i-1) * 40,textPaint);
         }
+        canvas.drawCircle(150,250,50,circlePaint);
     }
 }

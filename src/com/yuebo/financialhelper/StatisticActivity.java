@@ -8,11 +8,17 @@ import android.view.View;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.Toast;
+import com.lidroid.xutils.DbUtils;
 import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.db.sqlite.DbModelSelector;
+import com.lidroid.xutils.db.table.DbModel;
+import com.lidroid.xutils.exception.DbException;
 import com.lidroid.xutils.view.annotation.ViewInject;
 import com.lidroid.xutils.view.annotation.event.OnClick;
 import com.lidroid.xutils.view.annotation.event.OnFocusChange;
 import com.yuebo.financialhelper.MyView.MyView;
+import com.yuebo.financialhelper.domain.Account;
+import com.yuebo.financialhelper.utils.DBUtilsTool;
 import com.yuebo.financialhelper.utils.DateUtil;
 import com.yuebo.financialhelper.utils.FormatUtil;
 import com.yuebo.financialhelper.utils.MySQLiteOpenHelper;
@@ -33,9 +39,9 @@ public class StatisticActivity extends Activity {
     @ViewInject(R.id.myView_statistic)
     private MyView myView_statistic;
     //    @ViewInject(R.id.edittext_start_date)
-//    private EditText edittext_start_date;
-//    @ViewInject(R.id.edittext_end_date)
-//    private EditText edittext_end_date;
+    //    private EditText edittext_start_date;
+    //    @ViewInject(R.id.edittext_end_date)
+    //    private EditText edittext_end_date;
     @ViewInject(R.id.datePicker_start)
     private DatePicker datePicker_start;
     @ViewInject(R.id.datePicker_end)
@@ -43,17 +49,15 @@ public class StatisticActivity extends Activity {
 
     String start_date = "1899-01-01";
     String end_date = "2015-04-30";
-    String[] viewNames =
-            {"make_money_view", "consume_view", "eat_view", "cloth_view", "house_view", "daily_use_view", "traffic_view"};
-    MySQLiteOpenHelper dbHelper;
+    String[] viewNames = {"1%", "2%", "21%", "22%", "23%", "25%", "24%"};
+    private DbUtils dbUtils;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_statistic);
         ViewUtils.inject(this);
-
-        dbHelper = new MySQLiteOpenHelper(this);
+        dbUtils = DBUtilsTool.getDBUtils(this);
         refreshData(start_date, end_date);
 
         Calendar calendar = Calendar.getInstance();
@@ -83,10 +87,16 @@ public class StatisticActivity extends Activity {
         });
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+//        dbUtils.close();
+    }
+
     private void refreshData(String start_date, String end_date) {
         double[] datas = new double[viewNames.length];
         for (int i = 0; i < viewNames.length; i++) {
-            datas[i] = getTotal(viewNames[i], start_date, end_date);
+            datas[i] = getTotal(i, start_date, end_date);
         }
 
         myView_statistic.setData(datas);
@@ -134,16 +144,22 @@ public class StatisticActivity extends Activity {
 //    }
 
 
-    private double getTotal(String viewName, String startDate, String endDate) {
-        String sql = "SELECT SUM(money) AS sum FROM " + viewName + " WHERE date >= ? and date <= ? ;";
-        System.out.println(sql);
-        List<Map<String, Object>> list = dbHelper.selectList(sql, new String[]{startDate, endDate});
-        if (list != null && list.size() > 0) {
-            Object ret = list.get(0).get("sum");
-            System.out.println(ret);
-            if (null != ret) {
-                return Double.parseDouble((String) ret);
-            }
+    private double getTotal(int index, String startDate, String endDate) {
+        DbModelSelector modelSelector = DbModelSelector
+                .from(Account.class)
+                .select("sum(money) as sum")
+                .where("category_code", "like", viewNames[index])
+                .and("date", ">=", startDate)
+                .and("date", "<=", end_date);
+        DbModel dbModelFirst = null;
+        try {
+            dbModelFirst = dbUtils.findDbModelFirst(modelSelector);
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+        if (dbModelFirst != null) {
+            String sum = dbModelFirst.getString("sum");
+            return sum == null ? 0 : Double.parseDouble(sum);
         }
         return 0;
     }

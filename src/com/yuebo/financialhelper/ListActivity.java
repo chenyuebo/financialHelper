@@ -3,9 +3,13 @@ package com.yuebo.financialhelper;
 import android.app.Activity;
 import android.os.Bundle;
 import android.widget.ListView;
+import com.lidroid.xutils.DbUtils;
 import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.exception.DbException;
 import com.lidroid.xutils.view.annotation.ViewInject;
 import com.yuebo.financialhelper.adapter.MyListAdapter;
+import com.yuebo.financialhelper.domain.Account;
+import com.yuebo.financialhelper.utils.DBUtilsTool;
 import com.yuebo.financialhelper.utils.MySQLiteOpenHelper;
 
 import java.util.List;
@@ -20,22 +24,34 @@ public class ListActivity extends Activity {
     @ViewInject(R.id.listView_list)
     private ListView listView_list;
 
-    List<Map<String,Object>> list_total;
-    MySQLiteOpenHelper dbHelper;
+    List<Account> list_total;
     MyListAdapter adapter;
+    private DbUtils dbUtils;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list);
         ViewUtils.inject(this);
-        dbHelper = new MySQLiteOpenHelper(this);
+        dbUtils = DBUtilsTool.getDBUtils(this);
         initListView();
     }
 
-    private void initListView(){
-        String sql = "select id,money,date,category_code,detail from journal_account;";
-        list_total = dbHelper.selectList(sql,null);
-        adapter = new MyListAdapter(this,list_total);
-        listView_list.setAdapter(adapter);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //dbUtils.close();
+    }
+
+    private void initListView() {
+        try {
+            list_total = dbUtils.findAll(Account.class);
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+        if(null != list_total) {
+            adapter = new MyListAdapter(this, list_total);
+            listView_list.setAdapter(adapter);
+        }
     }
 }

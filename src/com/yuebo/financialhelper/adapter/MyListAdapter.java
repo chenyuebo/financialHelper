@@ -9,6 +9,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import com.yuebo.financialhelper.R;
+import com.yuebo.financialhelper.domain.Account;
 import com.yuebo.financialhelper.utils.FormatUtil;
 import org.w3c.dom.Text;
 
@@ -26,9 +27,9 @@ public class MyListAdapter extends BaseAdapter {
 
     private static final String TAG = "MyListAdapter";
     private Context context;
-    private List<Map<String,Object>> list;
+    private List<Account> list;
 
-    public MyListAdapter(Context context, List<Map<String,Object>> list){
+    public MyListAdapter(Context context, List<Account> list) {
         this.context = context;
         this.list = list;
     }
@@ -51,37 +52,37 @@ public class MyListAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder viewHolder;
-        if(convertView == null){
-            convertView = LayoutInflater.from(context).inflate(R.layout.item_list,null);
+        if (convertView == null) {
+            convertView = LayoutInflater.from(context).inflate(R.layout.item_list, null);
             viewHolder = new ViewHolder();
             viewHolder.textView_date = (TextView) convertView.findViewById(R.id.textView_money);
             viewHolder.textView_money = (TextView) convertView.findViewById(R.id.textView_date);
             viewHolder.imageView_category = (ImageView) convertView.findViewById(R.id.imageView_category);
             convertView.setTag(viewHolder);
-        }else{
+        } else {
             viewHolder = (ViewHolder) convertView.getTag();
         }
-        Map<String,Object> m = list.get(position);
-        Log.d(TAG,m.toString());
-        String date= (String)m.get("date");
-        String category_code = (String)m.get("category_code");
-        String money = (String)m.get("money");
+        Account account = list.get(position);
+        Log.d(TAG, account.toString());
+        String date = account.getDate();
+        String category_code = "" + account.getCategory().getCategory_code();
+        double money = account.getMoney();
 
-        if(category_code.startsWith("1")){
+        if (category_code.startsWith("1")) {
             viewHolder.imageView_category.setImageResource(R.drawable.up);
-        }else if(category_code.startsWith("2")){
+        } else if (category_code.startsWith("2")) {
             viewHolder.imageView_category.setImageResource(R.drawable.down);
-        }else{
+        } else {
             viewHolder.imageView_category.setImageBitmap(null);
         }
 
-        viewHolder.textView_money.setText(money);
+        viewHolder.textView_money.setText("" + money);
         viewHolder.textView_date.setText(date);
 
         return convertView;
     }
 
-    class ViewHolder{
+    class ViewHolder {
         TextView textView_money;
         TextView textView_date;
         ImageView imageView_category;

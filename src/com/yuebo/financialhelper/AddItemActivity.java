@@ -10,10 +10,15 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
+import com.lidroid.xutils.DbUtils;
 import com.lidroid.xutils.ViewUtils;
+import com.lidroid.xutils.exception.DbException;
 import com.lidroid.xutils.view.annotation.ViewInject;
 import com.lidroid.xutils.view.annotation.event.OnClick;
 import com.lidroid.xutils.view.annotation.event.OnFocusChange;
+import com.yuebo.financialhelper.domain.Account;
+import com.yuebo.financialhelper.domain.Category;
+import com.yuebo.financialhelper.utils.DBUtilsTool;
 import com.yuebo.financialhelper.utils.FormatUtil;
 import com.yuebo.financialhelper.utils.MySQLiteOpenHelper;
 
@@ -39,34 +44,44 @@ public class AddItemActivity extends Activity {
     @ViewInject(R.id.btn_add_confirm)
     private Button btn_add_confirm;
 
-    List<Map<String, Object>> spinner_data;
-    ArrayAdapter<String> arrayAdapter;
-    MySQLiteOpenHelper dbHelper;
+    List<Category> spinner_data;
+    ArrayAdapter<Category> arrayAdapter;
+    private DbUtils dbUtils;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_item);
         ViewUtils.inject(this);
-        dbHelper = new MySQLiteOpenHelper(this);
+        dbUtils = DBUtilsTool.getDBUtils(this);
         initSpinner();
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dbUtils.close();
     }
 
     @OnClick(R.id.btn_add_confirm)
     public void btnAddConfirm(View view){
-        int category_code = getInputCategoryCode();
+        Category category = getInputCategory();
         String date = getInputDate();
         double money = getInputMoney();
         String detail = getInputDetail();
-        if(category_code == -1){
+        if(category == null){
             Toast.makeText(this,"请选择类别",Toast.LENGTH_SHORT).show();
         }else if(false == FormatUtil.isValidDate(date)){
             Toast.makeText(this,"请正确输入时间",Toast.LENGTH_SHORT).show();
         }else if(money == 0){
             Toast.makeText(this,"请输入金额",Toast.LENGTH_SHORT).show();
         }else{
-            boolean flag = saveData(date,money,category_code,detail);
+            Account account = new Account();
+            account.setCategory(category);
+            account.setDate(date);
+            account.setDetail(detail);
+            account.setMoney(money);
+            boolean flag = saveData(account);
             if(flag){
                 Toast.makeText(this,"保存成功",Toast.LENGTH_SHORT).show();
             }else{
@@ -76,9 +91,15 @@ public class AddItemActivity extends Activity {
 
     }
 
-    private boolean saveData(String date,double money,int category_code,String detail){
-        String sql = "INSERT INTO journal_account(money,category_code,date,detail) VALUES(?,?,?,?)";
-        return dbHelper.execSQL(sql,new Object[]{money,category_code,date,detail});
+    private boolean saveData(Account account){
+        boolean flag = false;
+        try {
+            dbUtils.save(account);
+            flag = true;
+        } catch (DbException e) {
+            e.printStackTrace();
+        }
+        return flag;
     }
 
     @OnFocusChange(R.id.editText_add_date)
@@ -113,16 +134,14 @@ public class AddItemActivity extends Activity {
         return s;
     }
 
-    private int getInputCategoryCode(){
-        String s = (String)spinner_add_category.getSelectedItem();
-        Log.d(TAG,s);
-        for (int i=0;i<spinner_data.size();i++){
-            String category_name = (String)spinner_data.get(i).get("category_name");
-            if(category_name.equals(s)){
-                return Integer.parseInt((String) spinner_data.get(i).get("category_code"));
-            }
+    private Category getInputCategory(){
+        Category category = (Category)spinner_add_category.getSelectedItem();
+        Log.d(TAG,category.toString());
+        if(category.getCategory_code() == -1){
+            return null;
+        }else{
+            return category;
         }
-        return -1;
     }
 
     private double getInputMoney(){
@@ -138,14 +157,22 @@ public class AddItemActivity extends Activity {
     }
 
     private void initSpinner() {
-        spinner_data = dbHelper.selectList("select id,category_name,category_code from category_map;", null);
-        List<String> items = new ArrayList<String>();
-        items.add("请选择类别");
-        for (int i = 0; i < spinner_data.size(); i++) {
-            String s = (String) spinner_data.get(i).get("category_name");
-            items.add(s);
+        try {
+            spinner_data = dbUtils.findAll(Category.class);
+        } catch (DbException e) {
+            e.printStackTrace();
         }
-        arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, android.R.id.text1, items);
-        spinner_add_category.setAdapter(arrayAdapter);
+        if(null != spinner_data){
+            Category category = new Category();
+            category.setCategory_name("请选择类别");
+            category.setCategory_code(-1);
+            spinner_data.add(0,category);
+            arrayAdapter = new ArrayAdapter<Category>(
+                    this
+                    , android.R.layout.simple_spinner_dropdown_item
+                    , android.R.id.text1
+                    , spinner_data);
+            spinner_add_category.setAdapter(arrayAdapter);
+        }
     }
 }
